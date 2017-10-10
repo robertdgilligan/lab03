@@ -4,6 +4,17 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+var session = require('express-session');
+
+require('dotenv').config();
+
+var mongoose = require('mongoose');
+mongoose.connect(`mongodb://${process.env.DB_USER}:${process.env.DB_PASSWORD}@ds135680.mlab.com:35680/rdg_lab03`);
+
+// authentication modules
+var passport = require("passport");
+var LocalStrategy = require('passport-local').Strategy;
 
 var index = require('./routes/index');
 var users = require('./routes/users');
@@ -19,6 +30,25 @@ app.set('view engine', 'ejs');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(session({
+    secret: 'SECRET',
+    name: 'cookie_name', // connect-mongo session store
+    resave: false,
+    saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Change the HTTP 'method' of the request to handle PUT and DELETE requests if they are sent in the _method property of a form
+app.use(methodOverride(function (req, res) {
+  if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+    // look in urlencoded POST bodies and delete it
+    var method = req.body._method
+    delete req.body._method
+    return method
+  }
+}));
+
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
